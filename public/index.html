@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QMD — Find anything in your docs</title>
+    <meta name="description"
+        content="Search your notes, meetings, and docs with local AI. Keyword or semantic — nothing leaves your machine." />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <!-- Animated mesh background -->
+    <div class="mesh-bg" aria-hidden="true">
+        <div class="mesh-orb mesh-orb-1"></div>
+        <div class="mesh-orb mesh-orb-2"></div>
+        <div class="mesh-orb mesh-orb-3"></div>
+    </div>
+
+    <!-- ─── Top Navigation ──────────────────────────────────────────── -->
+    <nav class="navbar sticky-top glass-nav" id="mainNav">
+        <div class="container-fluid px-3 px-md-4">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <div class="brand-logo">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                        <rect width="28" height="28" rx="7" fill="url(#brand-grad)" />
+                        <path d="M8 10.5L14 7L20 10.5V17.5L14 21L8 17.5V10.5Z" stroke="white" stroke-width="1.5"
+                            stroke-linejoin="round" />
+                        <circle cx="14" cy="14" r="3" fill="white" opacity="0.9" />
+                        <defs>
+                            <linearGradient id="brand-grad" x1="0" y1="0" x2="28" y2="28">
+                                <stop stop-color="#6366f1" />
+                                <stop offset="1" stop-color="#ec4899" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="brand-info">
+                    <span class="brand-text">QMD</span>
+                    <span class="brand-badge">LOCAL</span>
+                </div>
+            </a>
+
+            <div class="nav-actions">
+                <!-- Index status -->
+                <button class="nav-btn" id="statusBtn" title="Index status">
+                    <div class="status-indicator" id="statusDot"></div>
+                    <span class="nav-btn-label d-none d-md-inline" id="statusLabel">Connecting...</span>
+                </button>
+
+                <!-- Keyboard shortcut hint -->
+                <div class="kbd-hint d-none d-lg-flex">
+                    <kbd>/</kbd> <span>to search</span>
+                </div>
+
+                <!-- Theme toggle -->
+                <button class="nav-btn theme-toggle" id="themeToggle" title="Toggle theme"
+                    aria-label="Toggle light/dark theme">
+                    <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                </button>
+
+                <!-- Collection manager -->
+                <button class="nav-btn nav-btn-primary" data-bs-toggle="modal" data-bs-target="#collectionModal"
+                    title="Manage collections">
+                    <i class="bi bi-folder-plus"></i>
+                    <span class="d-none d-md-inline">Collections</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ─── Hero Search Section ─────────────────────────────────────── -->
+    <main class="container-fluid px-3 px-md-4">
+        <section class="search-hero" id="searchHero">
+            <div class="hero-badge">
+                <i class="bi bi-shield-lock-fill"></i> Runs entirely on your machine
+            </div>
+            <h1 class="hero-title">Find anything in your <span class="hero-highlight">docs</span></h1>
+            <p class="hero-subtitle">Search notes, meeting transcripts, and research — by keyword or meaning</p>
+
+            <div class="search-container" id="searchContainer">
+                <div class="search-bar">
+                    <div class="search-bar-inner">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" class="search-input" id="searchInput" placeholder="Search your docs..."
+                            autocomplete="off" autofocus />
+                        <div class="search-actions">
+                            <button class="btn search-btn search-fast" id="btnFast"
+                                title="Fast keyword search — BM25 (Enter)">
+                                <i class="bi bi-lightning-charge-fill"></i>
+                                <span>Fast</span>
+                                <kbd class="search-kbd">↵</kbd>
+                            </button>
+                            <button class="btn search-btn search-deep" id="btnDeep"
+                                title="Deep AI search with reranking (Shift+Enter)">
+                                <i class="bi bi-stars"></i>
+                                <span>Deep</span>
+                                <kbd class="search-kbd">⇧↵</kbd>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collection filters -->
+                <div class="collection-pills" id="collectionPills">
+                    <!-- Dynamically filled -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Results Section ─────────────────────────────────────── -->
+        <section class="results-section" id="resultsSection">
+            <!-- Loading state -->
+            <div class="search-loading d-none" id="searchLoading">
+                <div class="loading-pulse">
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                </div>
+                <p class="loading-text" id="loadingText">Searching...</p>
+            </div>
+
+            <!-- Results header -->
+            <div class="results-header d-none" id="resultsMeta">
+                <div class="results-info">
+                    <span id="resultsCount"></span>
+                    <span class="results-mode-badge" id="resultsModeBadge"></span>
+                </div>
+                <span class="results-time" id="resultsTime"></span>
+            </div>
+
+            <!-- Results grid -->
+            <div class="results-grid" id="resultsGrid">
+                <!-- Dynamically filled -->
+            </div>
+
+            <!-- Empty state -->
+            <div class="empty-state d-none" id="emptyState">
+                <div class="empty-illustration">
+                    <i class="bi bi-search"></i>
+                </div>
+                <h3>Nothing matched</h3>
+                <p>Try different words, switch to Deep search, or remove the collection filter</p>
+            </div>
+
+            <!-- Welcome state (before first search) -->
+            <div class="welcome-state" id="welcomeState">
+                <div class="welcome-cards">
+                    <div class="welcome-card">
+                        <div class="welcome-card-icon fast-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                        <h4>Fast</h4>
+                        <p>Keyword match — instant results when you know the exact terms.</p>
+                        <span class="welcome-shortcut"><kbd>Enter</kbd></span>
+                    </div>
+                    <div class="welcome-card">
+                        <div class="welcome-card-icon deep-icon"><i class="bi bi-stars"></i></div>
+                        <h4>Deep</h4>
+                        <p>AI-powered — finds relevant docs even when wording doesn't match.</p>
+                        <span class="welcome-shortcut"><kbd>Shift</kbd> + <kbd>Enter</kbd></span>
+                    </div>
+                    <div class="welcome-card">
+                        <div class="welcome-card-icon collection-icon"><i class="bi bi-collection"></i></div>
+                        <h4>Collections</h4>
+                        <p>Group docs into collections, then filter results with one click.</p>
+                        <span class="welcome-shortcut"><kbd>/</kbd> to focus</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ─── Collection Manager Modal ────────────────────────────────── -->
+    <div class="modal fade" id="collectionModal" tabindex="-1" aria-labelledby="collectionModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content glass-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="collectionModalLabel">
+                        <i class="bi bi-collection"></i> Collection Manager
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Existing collections -->
+                    <div class="mb-4">
+                        <div class="section-header">
+                            <h6 class="section-label">Your Collections</h6>
+                            <span class="section-count" id="collectionCount">0</span>
+                        </div>
+                        <div class="collection-list" id="collectionList">
+                            <!-- Dynamically filled -->
+                        </div>
+                    </div>
+
+                    <hr class="divider" />
+
+                    <!-- Add new collection -->
+                    <h6 class="section-label">Add New Collection</h6>
+                    <form id="addCollectionForm" class="add-collection-form">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="colName" class="form-label">Collection Name</label>
+                                <div class="input-with-icon">
+                                    <i class="bi bi-tag"></i>
+                                    <input type="text" class="form-control" id="colName"
+                                        placeholder="e.g. meeting-notes" required />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="colMask" class="form-label">File Pattern</label>
+                                <div class="input-with-icon">
+                                    <i class="bi bi-funnel"></i>
+                                    <input type="text" class="form-control" id="colMask" placeholder="**/*.md"
+                                        value="**/*.md" />
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label for="colPath" class="form-label">Folder Path</label>
+                                <div class="input-with-icon">
+                                    <i class="bi bi-folder2-open"></i>
+                                    <input type="text" class="form-control" id="colPath"
+                                        placeholder="/Users/you/Documents/notes" required />
+                                </div>
+                            </div>
+                            <div class="col-12 d-flex gap-2 flex-wrap">
+                                <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+                                    <i class="bi bi-plus-circle"></i> Add Collection
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-2"
+                                    id="btnEmbed">
+                                    <i class="bi bi-cpu"></i> Re-embed All
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Feedback -->
+                    <div class="mt-3 d-none" id="collectionFeedback">
+                        <div class="alert" role="alert" id="collectionAlert"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Toast container ─────────────────────────────────────────── -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
+    <!-- ─── About Modal ───────────────────────────────────────────── -->
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content glass-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="aboutModalLabel">
+                        <i class="bi bi-info-circle"></i> About QMD UI
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body about-body">
+                    <!-- Project info -->
+                    <div class="about-hero">
+                        <div class="about-logo">
+                            <svg width="48" height="48" viewBox="0 0 28 28" fill="none">
+                                <rect width="28" height="28" rx="7" fill="url(#about-grad)" />
+                                <path d="M8 10.5L14 7L20 10.5V17.5L14 21L8 17.5V10.5Z" stroke="white" stroke-width="1.5"
+                                    stroke-linejoin="round" />
+                                <circle cx="14" cy="14" r="3" fill="white" opacity="0.9" />
+                                <defs>
+                                    <linearGradient id="about-grad" x1="0" y1="0" x2="28" y2="28">
+                                        <stop stop-color="#7c3aed" />
+                                        <stop offset="1" stop-color="#e11d48" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div>
+                            <h6 class="about-name">QMD UI <span class="about-version">v1.0.0</span></h6>
+                            <p class="about-tagline">A desktop UI for local document search</p>
+                        </div>
+                    </div>
+
+                    <hr class="divider" />
+
+                    <!-- Upstream attribution -->
+                    <div class="about-section">
+                        <h6 class="section-label">Built on</h6>
+                        <div class="about-upstream">
+                            <div class="about-upstream-info">
+                                <strong>qmd</strong> — Local hybrid search engine for markdown documents
+                                <br />
+                                <span class="about-author">by Tobi Lutke · <span id="qmdVersion"></span></span>
+                            </div>
+                            <a href="https://github.com/tobi/qmd" target="_blank" rel="noopener noreferrer"
+                                class="about-link">
+                                <i class="bi bi-github"></i> View on GitHub
+                            </a>
+                        </div>
+                    </div>
+
+                    <hr class="divider" />
+
+                    <!-- Licenses -->
+                    <div class="about-section">
+                        <h6 class="section-label">Licenses</h6>
+                        <div class="about-license-grid">
+                            <div class="about-license-card">
+                                <div class="about-license-header">
+                                    <i class="bi bi-file-text"></i> QMD UI
+                                </div>
+                                <p>MIT License © 2026 Nare Sai Chaitanya</p>
+                                <p class="about-muted">This UI wrapper is an independent project, not affiliated with or
+                                    endorsed by the qmd authors.</p>
+                            </div>
+                            <div class="about-license-card">
+                                <div class="about-license-header">
+                                    <i class="bi bi-file-text"></i> qmd (upstream)
+                                </div>
+                                <p>MIT License © 2024–2026 Tobi Lutke</p>
+                                <p class="about-muted">The qmd CLI is used as an external dependency and is not modified
+                                    or redistributed by this project.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="divider" />
+
+                    <!-- Tech stack -->
+                    <div class="about-section">
+                        <h6 class="section-label">Tech Stack</h6>
+                        <div class="about-stack">
+                            <span class="about-chip">Node.js + Express</span>
+                            <span class="about-chip">Bootstrap 5</span>
+                            <span class="about-chip">qmd CLI</span>
+                            <span class="about-chip">mammoth.js</span>
+                            <span class="about-chip">chokidar</span>
+                        </div>
+                    </div>
+
+                    <hr class="divider" />
+
+                    <!-- Links -->
+                    <div class="about-section">
+                        <h6 class="section-label">Links</h6>
+                        <div class="about-links">
+                            <a href="https://github.com/tobi/qmd" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-github"></i> qmd on GitHub
+                            </a>
+                            <a href="https://github.com/tobi/qmd#readme" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-book"></i> qmd Documentation
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Footer status bar ───────────────────────────────────────── -->
+    <footer class="status-bar" id="statusBar">
+        <div class="status-bar-left">
+            <span class="status-bar-item" id="footerCollections"></span>
+            <span class="status-bar-item" id="footerDocs"></span>
+        </div>
+        <div class="status-bar-right">
+            <button class="status-bar-btn" data-bs-toggle="modal" data-bs-target="#aboutModal" title="About QMD UI">
+                <i class="bi bi-info-circle"></i> About
+            </button>
+            <span class="status-bar-sep">·</span>
+            <span class="status-bar-item">QMD UI v1.0</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+{
+  "name": "qmd-ui",
+  "version": "1.0.0",
+  "description": "A desktop UI wrapper for qmd — search your notes, meetings, architecture docs with semantic AI, all local, all private.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saichaitanyan/qmd-ui.git"
+  },
+  "keywords": [
+    "qmd",
+    "semantic-search",
+    "local-ai",
+    "knowledge-base"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/saichaitanyan/qmd-ui/issues"
+  },
+  "homepage": "https://github.com/saichaitanyan/qmd-ui#readme",
+  "dependencies": {
+    "chokidar": "^5.0.0",
+    "express": "^5.2.1",
+    "mammoth": "^1.11.0"
+  }
+}
